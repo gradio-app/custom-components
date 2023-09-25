@@ -125,8 +125,22 @@ export const change_light = (
   light.dispose();
 
   switch (light_type) {
-    case light_type:
-      light = new light_types[light_type](
+    case "DirectionalLight":
+      light = new BABYLON.DirectionalLight(
+        light_type,
+        new BABYLON.Vector3(...light_position),
+        scene
+      );
+      break;
+    case "PointLight":
+      light = new BABYLON.PointLight(
+        light_type,
+        new BABYLON.Vector3(...light_position),
+        scene
+      );
+      break;
+    case "HemiLight":
+      light = new BABYLON.HemisphericLight(
         light_type,
         new BABYLON.Vector3(...light_position),
         scene
