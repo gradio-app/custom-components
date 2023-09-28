@@ -1,4 +1,4 @@
-"""gr.Model3D() component."""
+"""gr.shiny3D() component."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ set_documentation_group("component")
 
 
 @document()
-class shiny3dmodel(Component):
+class shiny3D(Component):
     """
     Component allows users to upload or view 3D Model files (.obj, .glb, or .gltf).
     Preprocessing: This component passes the uploaded file as a {str}filepath.
@@ -43,7 +43,6 @@ class shiny3dmodel(Component):
             None,
         ),
         zoom_speed: float = 1,
-        light: list[int] | None = None,
         height: int | None = None,
         label: str | None = None,
         show_label: bool | None = None,
@@ -77,7 +76,6 @@ class shiny3dmodel(Component):
         self.camera_position = camera_position
         self.height = height
         self.zoom_speed = zoom_speed
-        self.light = light
         super().__init__(
             label=label,
             every=every,
@@ -102,7 +100,6 @@ class shiny3dmodel(Component):
         clear_color: tuple[float, float, float, float] | None = None,
         height: int | None = None,
         zoom_speed: float | None = None,
-        light: list[int] | None = None,
         label: str | None = None,
         show_label: bool | None = None,
         container: bool | None = None,
@@ -111,14 +108,13 @@ class shiny3dmodel(Component):
         visible: bool | None = None,
     ):
         warnings.warn(
-            "Using the update method is deprecated. Simply return a new object instead, e.g. `return gr.Model3D(...)` instead of `return gr.Model3D.update(...)`."
+            "Using the update method is deprecated. Simply return a new object instead, e.g. `return gr.shiny3D(...)` instead of `return gr.shiny3D.update(...)`."
         )
         updated_config = {
             "camera_position": camera_position,
             "clear_color": clear_color,
             "height": height,
             "zoom_speed": zoom_speed,
-            "light": light,
             "label": label,
             "show_label": show_label,
             "container": container,

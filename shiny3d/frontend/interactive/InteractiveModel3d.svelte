@@ -53,7 +53,7 @@
   {min_width}
   {height}
 >
-  <StatusTracker autoscroll={gradio.autoscroll} {...loading_status} />
+  <!-- <StatusTracker autoscroll={gradio.autoscroll} {...loading_status} /> -->
 
   <Model3DUpload
     {label}
@@ -68,6 +68,6 @@
     on:change={({ detail }) => gradio.dispatch("change", detail)}
     on:clear={() => gradio.dispatch("clear")}
   >
-    <UploadText />
+    <!-- <UploadText /> -->
   </Model3DUpload>
 </Block>

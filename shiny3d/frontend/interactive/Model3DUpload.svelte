@@ -104,12 +104,12 @@
   </Upload>
 {:else}
   <div class="input-model">
-    <ModifyUpload
+    <!-- <ModifyUpload
       undoable
       on:clear={handle_clear}
       on:undo={handle_undo}
       absolute
-    />
+    /> -->
 
     <canvas bind:this={canvas} />
   </div>
