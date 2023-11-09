@@ -1,12 +1,12 @@
 
 import gradio as gr
-from gradio_videogallery import VideoGallery
+from gradio_videogallery import videogallery
 
 
-example = VideoGallery().example_inputs()
+example = videogallery().example_inputs()
 
 with gr.Blocks() as demo:
-    VideoGallery(value=example, interactive=False)
- 
+    with gr.Row():
+        videogallery(value=example, label="Populated"),  # populated component
 
 demo.launch()

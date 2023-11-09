@@ -2,13 +2,12 @@
 	import { BlockLabel, Empty, ShareButton } from "@gradio/atoms";
 	import { ModifyUpload } from "@gradio/upload";
 	import type { SelectData } from "@gradio/utils";
-
+	import { dequal } from "dequal";
 	import { createEventDispatcher } from "svelte";
 	import { tick } from "svelte";
 
-	import { Download, Image, Play } from "@gradio/icons";
-	import type { FileData } from "@gradio/upload";
-	import { normalise_file } from "@gradio/upload";
+	import { Download, Image } from "@gradio/icons";
+	import { normalise_file, type FileData } from "@gradio/client";
 	import { format_gallery_for_sharing } from "./utils";
 	import { IconButton } from "@gradio/atoms";
 	import type { I18nFormatter } from "@gradio/utils";
@@ -16,10 +15,10 @@
 	export let show_label = true;
 	export let label: string;
 	export let root = "";
-	export let root_url: null | string = null;
-	export let value: { media: FileData; caption: string | null; thumbnail: string | null }[] | null = null;
-	export let grid_cols: number | number[] | undefined = [2];
-	export let grid_rows: number | number[] | undefined = undefined;
+	export let proxy_url: null | string = null;
+	export let value: { image: FileData; caption: string | null }[] | null = null;
+	export let columns: number | number[] | undefined = [2];
+	export let rows: number | number[] | undefined = undefined;
 	export let height: number | "auto" = "auto";
 	export let preview: boolean;
 	export let allow_preview = true;
@@ -28,8 +27,10 @@
 	export let show_share_button = false;
 	export let show_download_button = false;
 	export let i18n: I18nFormatter;
+	export let selected_index: number | null = null;
 
 	const dispatch = createEventDispatcher<{
+		change: undefined;
 		select: SelectData;
 	}>();
 
@@ -38,41 +39,45 @@
 
 	$: was_reset = value == null || value.length == 0 ? true : was_reset;
 
-	let _value: { media: FileData; caption: string | null; thumbnail: string | null }[] | null = null;
-	$: _value = 
+	let _value: { image: FileData; caption: string | null }[] | null = null;
+	$: _value =
 		value === null
 			? null
 			: value.map((data) => ({
-					media: normalise_file(data.media, root, root_url) as FileData,
-					caption: data.caption,
-					thumbnail: generate_thumbnail(data)
+					image: normalise_file(data.image, root, proxy_url) as FileData,
+					caption: data.caption
 			  }));
-	let prevValue: { media: FileData; caption: string | null }[] | null | null =
+
+	let prevValue: { image: FileData; caption: string | null }[] | null | null =
 		value;
-	let selected_media = preview && value?.length ? 0 : null;
-	let old_selected_media: number | null = selected_media;
-	$: if (prevValue !== value) {
+	if (selected_index === null && preview && value?.length) {
+		selected_index = 0;
+	}
+	let old_selected_index: number | null = selected_index;
+
+	$: if (!dequal(prevValue, value)) {
 		// When value is falsy (clear button or first load),
 		// preview determines the selected image
 		if (was_reset) {
-			selected_media = preview && value?.length ? 0 : null;
+			selected_index = preview && value?.length ? 0 : null;
 			was_reset = false;
-			// Otherwise we keep the selected_media the same if the
+			// Otherwise we keep the selected_index the same if the
 			// gallery has at least as many elements as it did before
 		} else {
-			selected_media =
-				selected_media !== null &&
+			selected_index =
+				selected_index !== null &&
 				value !== null &&
-				selected_media < value.length
-					? selected_media
+				selected_index < value.length
+					? selected_index
 					: null;
 		}
+		dispatch("change");
 		prevValue = value;
 	}
 
 	$: previous =
-		((selected_media ?? 0) + (_value?.length ?? 0) - 1) % (_value?.length ?? 0);
-	$: next = ((selected_media ?? 0) + 1) % (_value?.length ?? 0);
+		((selected_index ?? 0) + (_value?.length ?? 0) - 1) % (_value?.length ?? 0);
+	$: next = ((selected_index ?? 0) + 1) % (_value?.length ?? 0);
 
 	function handle_preview_click(event: MouseEvent): void {
 		const element = event.target as HTMLElement;
@@ -81,9 +86,9 @@
 		const centerX = width / 2;
 
 		if (x < centerX) {
-			selected_media = previous;
+			selected_index = previous;
 		} else {
-			selected_media = next;
+			selected_index = next;
 		}
 	}
 
@@ -91,15 +96,15 @@
 		switch (e.code) {
 			case "Escape":
 				e.preventDefault();
-				selected_media = null;
+				selected_index = null;
 				break;
 			case "ArrowLeft":
 				e.preventDefault();
-				selected_media = previous;
+				selected_index = previous;
 				break;
 			case "ArrowRight":
 				e.preventDefault();
-				selected_media = next;
+				selected_index = next;
 				break;
 			default:
 				break;
@@ -112,46 +117,29 @@
 
 	function getHrefValue(selected: any): string {
 		if (isFileData(selected)) {
-			return selected.data;
+			return selected.path;
 		} else if (typeof selected === "string") {
 			return selected;
+		} else if (Array.isArray(selected)) {
+			return getHrefValue(selected[0]);
 		}
 		return "";
 	}
 
-	function generate_thumbnail(data: any): string {
-		if (data.media.mime_type === "video/mp4") {
-			var canvas = document.createElement("canvas");   
-			var ctx = canvas.getContext("2d");   
-			var video = document.createElement("video"); 
-			video.src = data.media.data;
-			video.onloadeddata = () => {
-				canvas.width = video.videoWidth;
-				canvas.height = video.videoHeight;
-				ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-				var url = canvas.toDataURL('image/png');
-				console.log("!@#!@# ", url);    
-				return url;
-			};
-		} else {
-			return "";
-		}
-	}
-
 	$: {
-		if (selected_media !== old_selected_media) {
-			old_selected_media = selected_media;
-			if (selected_media !== null) {
+		if (selected_index !== old_selected_index) {
+			old_selected_index = selected_index;
+			if (selected_index !== null) {
 				dispatch("select", {
-					index: selected_media,
-					value: _value?.[selected_media].caption
+					index: selected_index,
+					value: _value?.[selected_index]
 				});
 			}
 		}
 	}
 
 	$: if (allow_preview) {
-		scroll_to_img(selected_media);
+		scroll_to_img(selected_index);
 	}
 
 	let el: HTMLButtonElement[] = [];
@@ -161,7 +149,9 @@
 		if (typeof index !== "number") return;
 		await tick();
 
-		el[index].focus();
+		if (el[index] === undefined) return;
+
+		el[index]?.focus();
 
 		const { left: container_left, width: container_width } =
 			container_element.getBoundingClientRect();
@@ -175,10 +165,12 @@
 			container_width / 2 +
 			container_element.scrollLeft;
 
-		container_element?.scrollTo({
-			left: pos < 0 ? 0 : pos,
-			behavior: "smooth"
-		});
+		if (container_element && typeof container_element.scrollTo === "function") {
+			container_element.scrollTo({
+				left: pos < 0 ? 0 : pos,
+				behavior: "smooth"
+			});
+		}
 	}
 
 	let client_height = 0;
@@ -193,13 +185,12 @@
 {#if value === null || _value === null || _value.length === 0}
 	<Empty unpadded_box={true} size="large"><Image /></Empty>
 {:else}
-	{#if selected_media !== null && allow_preview}
-		<!-- svelte-ignore a11y-no-static-element-interactions -->
-		<div on:keydown={on_keydown} class="preview">
+	{#if selected_index !== null && allow_preview}
+		<button on:keydown={on_keydown} class="preview">
 			<div class="icon-buttons">
 				{#if show_download_button}
 					<a
-						href={getHrefValue(value[selected_media])}
+						href={getHrefValue(value[selected_index])}
 						target={window.__is_colab__ ? "_blank" : null}
 						download="image"
 					>
@@ -210,17 +201,16 @@
 				<ModifyUpload
 					{i18n}
 					absolute={false}
-					on:clear={() => (selected_media = null)}
+					on:clear={() => (selected_index = null)}
 				/>
 			</div>
-			<!-- svelte-ignore a11y-click-events-have-key-events -->
-			<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-			{#if _value[selected_media].media.mime_type === "video/mp4"}
+			{#if _value[selected_index].image.mime_type === "video/mp4"}
 					<video
+						class="detailed-video"
 						data-testid="detailed-video"
 						controls
-						src={_value[selected_media].media.data}
-						title={_value[selected_media].media.alt_text}
+						src={_value[selected_index].image.path}
+						title={_value[selected_index].image.alt_text}
 						preload="auto"
 						on:play
 						on:pause
@@ -229,23 +219,28 @@
 						<track kind="captions" />
 					</video>
 			{:else}
-				<img
-					data-testid="detailed-image"
+				<button
+					class="image-button"
 					on:click={(event) => handle_preview_click(event)}
-					src={_value[selected_media].media.data}
-					alt={_value[selected_media].caption || ""}
-					title={_value[selected_media].caption || null}
-					class:with-caption={!!_value[selected_media].caption}
-					style="height: calc(100% - {_value[selected_media].caption}
+					style="height: calc(100% - {_value[selected_index].caption
 						? '80px'
 						: '60px'})"
-					loading="lazy"
-				/>
+					aria-label="detailed view of selected image"
+				>
+					<img
+						data-testid="detailed-image"
+						src={_value[selected_index].image.url}
+						alt={_value[selected_index].caption || ""}
+						title={_value[selected_index].caption || null}
+						class:with-caption={!!_value[selected_index].caption}
+						loading="lazy"
+					/>
+				</button>
 			{/if}
-			{#if _value[selected_media].caption}
-				<div class="caption">
-					{_value[selected_media].caption}
-				</div>
+			{#if _value[selected_index]?.caption}
+				<caption class="caption">
+					{_value[selected_index].caption}
+				</caption>
 			{/if}
 			<div
 				bind:this={container_element}
@@ -255,26 +250,22 @@
 				{#each _value as media, i}
 					<button
 						bind:this={el[i]}
-						on:click={() => (selected_media = i)}
+						on:click={() => (selected_index = i)}
 						class="thumbnail-item thumbnail-small"
-						class:selected={selected_media === i}
+						class:selected={selected_index === i}
+						aria-label={"Thumbnail " + (i + 1) + " of " + _value.length}
 					>
-						{#if media.media.mime_type === "video/mp4"}
-						<div class="play">
-							<Play />
-						</div>
-						{:else}
-							<img
-								src={media.media.data}
-								title={media.caption || null}
-								alt={media.caption || null}
-								loading="lazy"
-							/>
-						{/if}
+						<img
+							src={media.image.url}
+							title={media.caption || null}
+							data-testid={"thumbnail " + (i + 1)}
+							alt=""
+							loading="lazy"
+						/>
 					</button>
 				{/each}
 			</div>
-		</div>
+		</button>
 	{/if}
 
 	<div
@@ -284,7 +275,7 @@
 	>
 		<div
 			class="grid-container"
-			style="--grid-cols:{grid_cols}; --grid-rows:{grid_rows}; --object-fit: {object_fit}; height: {height};"
+			style="--grid-cols:{columns}; --grid-rows:{rows}; --object-fit: {object_fit}; height: {height};"
 			class:pt-6={show_label}
 		>
 			{#if show_share_button}
@@ -301,36 +292,39 @@
 			{#each _value as entry, i}
 				<button
 					class="thumbnail-item thumbnail-lg"
-					class:selected={selected_media === i}
-					on:click={() => (selected_media = i)}
+					class:selected={selected_index === i}
+					on:click={() => (selected_index = i)}
+					aria-label={"Thumbnail " + (i + 1) + " of " + _value.length}
 				>
-				{#if entry.media.mime_type === "video/mp4"}
-					<video
-						data-testid="gallery-video"
-						controls
-						src={entry.media.data}
-						title={entry.media.alt_text}
-						preload="auto"
-						on:play
-						on:pause
-						on:ended
-					>
-						<track kind="captions" />
-					</video>
-				{:else}
-					<img
-						alt={entry.caption || ""}
-						src={typeof entry.media === "string"
-							? entry.media
-							: entry.media.data}
-						loading="lazy"
-					/>
-				{/if}
-				{#if entry.caption}
-					<div class="caption-label">
-						{entry.caption}
-					</div>
-				{/if}
+
+					{#if entry.image.mime_type === "video/mp4"}
+						<video
+							class="detailed-video"
+							data-testid="detailed-video"
+							controls
+							src={entry.image.path}
+							title={entry.image.alt_text}
+							preload="auto"
+							on:play
+							on:pause
+							on:ended
+						>
+							<track kind="captions" />
+						</video>
+					{:else}
+						<img
+							alt={entry.caption || ""}
+							src={typeof entry.image === "string"
+								? entry.image
+								: entry.image.url}
+							loading="lazy"
+						/>
+					{/if}
+					{#if entry.caption}
+						<div class="caption-label">
+							{entry.caption}
+						</div>
+					{/if}
 				</button>
 			{/each}
 		</div>
@@ -362,20 +356,25 @@
 			min-height: 450px;
 		}
 	}
-	.play {
-		height: 50%;
+	.detailed-video {
+		height: calc(100% - 60px);
+		width: 100%;
+		display: flex;
 	}
-	video {
-		height: 100%;
+
+	.image-button {
+		height: calc(100% - 60px);
+		width: 100%;
+		display: flex;
 	}
 	.preview img {
 		width: var(--size-full);
-		height: calc(var(--size-full) - 60px);
+		height: var(--size-full);
 		object-fit: contain;
 	}
 
 	.preview img.with-caption {
-		height: calc(var(--size-full) - 80px);
+		height: var(--size-full);
 	}
 
 	.caption {
@@ -386,6 +385,7 @@
 		text-align: center;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		align-self: center;
 	}
 
 	.thumbnails {

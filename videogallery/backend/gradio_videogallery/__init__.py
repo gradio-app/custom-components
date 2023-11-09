@@ -1,4 +1,4 @@
 
-from .videogallery import VideoGallery
+from .videogallery import videogallery
 
-__all__ = ['VideoGallery']
+__all__ = ['videogallery']
