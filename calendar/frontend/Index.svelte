@@ -26,6 +26,7 @@
 	export let value_is_output = false;
 	export let interactive: boolean;
 	export let rtl = false;
+	export let type = "date";
 
 	let el: HTMLTextAreaElement | HTMLInputElement;
 	const container = true;
@@ -71,18 +72,32 @@
 
 	<label class:container>
 		<BlockTitle {show_label} info={undefined}>{label}</BlockTitle>
-
-		<input
-			data-testid="textbox"
-			type="date"
-			class="scroll-hide"
-			bind:value
-			bind:this={el}
-			{placeholder}
-			disabled={!interactive}
-			dir={rtl ? "rtl" : "ltr"}
-			on:keypress={handle_keypress}
-		/>
+		<!-- add if else statement -->
+		{#if type === "date"}
+			<input
+				data-testid="textbox"
+				type="date"
+				class="scroll-hide"
+				bind:value
+				bind:this={el}
+				{placeholder}
+				disabled={!interactive}
+				dir={rtl ? "rtl" : "ltr"}
+				on:keypress={handle_keypress}
+			/>
+		{:else if type === "datetime-local"}
+			<input
+				data-testid="textbox"
+				type="datetime-local"
+				class="scroll-hide"
+				bind:value
+				bind:this={el}
+				{placeholder}
+				disabled={!interactive}
+				dir={rtl ? "rtl" : "ltr"}
+				on:keypress={handle_keypress}
+			/>
+		{/if}
 	</label>
 </Block>
 

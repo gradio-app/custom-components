@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 from gradio.components.base import FormComponent
 from gradio.events import Events
@@ -24,6 +24,7 @@ class Calendar(FormComponent):
         self,
         value: str | Callable | None = "",
         *,
+        type: Literal["date", "datetime-local"] = "date",
         placeholder: str | None = None,
         label: str | None = None,
         every: float | None = None,
@@ -68,6 +69,7 @@ class Calendar(FormComponent):
             value=value,
             render=render,
         )
+        self.type = type
 
     def preprocess(self, x: str | None) -> str | None:
         """

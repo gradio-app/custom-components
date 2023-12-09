@@ -39,7 +39,7 @@ classifiers = [
 dev = ["build", "twine"]
 
 [tool.hatch.build]
-artifacts = ["/backend/gradio_calendar/templates", "*.pyi", "\\backend\\gradio_calendar\\templates", "\\backend\\gradio_calendar\\templates"]
+artifacts = ["/backend/gradio_calendar/templates", "*.pyi", "\\backend\\gradio_calendar\\templates", "\\backend\\gradio_calendar\\templates", "\\backend\\gradio_calendar\\templates", "\\backend\\gradio_calendar\\templates", "\\backend\\gradio_calendar\\templates"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["/backend/gradio_calendar"]
