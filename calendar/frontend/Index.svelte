@@ -74,7 +74,7 @@
 
 		<input
 			data-testid="textbox"
-			type="text"
+			type="date"
 			class="scroll-hide"
 			bind:value
 			bind:this={el}
